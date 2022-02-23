@@ -1,19 +1,35 @@
 ---
-- hosts: 
+- hosts: all 
   become: yes
   #remote_user:
   tasks:
-    - name: Adicionando repositorio Zabbix
+    - name: Adicionando repositorio Zabbix OEL
       shell: rpm -Uvh https://repo.zabbix.com/zabbix/4.0/rhel/7/x86_64/zabbix-release-4.0-2.el7.noarch.rpm
       ignore_errors: yes
+      when: ansible_distribution == 'OracleLinux' or ansible_distribution == 'Red Hat Enterprise Linux'
 
     - name: Limpando Metadaos
       shell: yum clean all
+      when: ansible_distribution == 'OracleLinux' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-    - name: Instalando o zabbix-agent
+    - name: Adicionando repositorio Zabbix Ubuntu
+      raw: wget  https://repo.zabbix.com/zabbix/4.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_4.0-3+focal_all.deb -y
+      raw: dpkg -i zabbix-release_4.0-3+focal_all.deb
+      raw: apt update
+      when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu' 
+
+
+    - name: Instalando o zabbix-agent OEL
       yum:
         name: zabbix-agent
         state: present
+      when: ansible_distribution == 'OracleLinux' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+    - name: Instalando zabbix-agent Ubuntu
+      apt:
+        name: zabbix-agent
+        state: present
+      when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
             
     - name: Copia arquivo de zabbix-agent.conf e verifica se ja tem o arquivo localmente
       template:
@@ -21,7 +37,7 @@
         dest: /etc/zabbix/zabbix_agentd.config
         force: no
 
-    - name: Restartando serviço do zabbix-agent
+    - name: Iniciando serviço do zabbix-agent
       service:
         name: zabbix-agent 
         state: started
